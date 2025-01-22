@@ -3,13 +3,14 @@ package com.scesi.farmacia.app.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.scesi.farmacia.app.domain.Product;
+import com.scesi.farmacia.app.model.Product;
 import com.scesi.farmacia.app.service.ProductService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,8 +28,13 @@ public class ProductController {
     }
 
     @PostMapping
-    public Product saveProduct(@RequestBody Product product) {
-        return productService.saveProduct(product);
+    public ResponseEntity<?> guardarProducto(@RequestBody Product producto) {
+        try {
+            Product nuevoProducto = productService.saveProduct(producto);
+            return ResponseEntity.ok(nuevoProducto);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
@@ -36,7 +42,7 @@ public class ProductController {
         return productService.getProductById(id);
     }
 
-    @DeleteMapping("deleteProduct/{id}")
+    @DeleteMapping("/{id}")
     public void deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
     }

@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.scesi.farmacia.app.domain.Product;
+import com.scesi.farmacia.app.model.Product;
 import com.scesi.farmacia.app.repository.ProductRepository;
 
 @Service
@@ -18,6 +18,10 @@ public class ProductService {
     }
 
     public Product saveProduct(Product product) {
+
+        if (productRepository.existsByNameProductAndComposition(product.getNameProduct(), product.getComposition())) {
+            throw new IllegalArgumentException("Ya existe un producto con el mismo nombre y composición.");
+        }
         return productRepository.save(product);
     }
 

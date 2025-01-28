@@ -3,13 +3,12 @@ package com.scesi.farmacia.app.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.scesi.farmacia.app.model.Product;
@@ -31,16 +30,9 @@ public class ProductController {
     }
 
     @PostMapping
-    public ResponseEntity<?> saveProducto(@RequestBody Product producto) {
-        try {
-            Product nuevoProducto = productService.saveProduct(producto);
-            return ResponseEntity.ok(nuevoProducto);
-        } catch (DataIntegrityViolationException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("El producto ya existe con el mismo nombre y composición.");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error al guardar el producto: " + e.getMessage());
-        }
+    public ResponseEntity<?> saveProducto(@RequestBody Product producto, @RequestParam Long laboratoryId) {
+        Product createdProduct = productService.createProduct(producto, laboratoryId);
+        return ResponseEntity.ok(createdProduct);
     }
 
     @GetMapping("/{id}")

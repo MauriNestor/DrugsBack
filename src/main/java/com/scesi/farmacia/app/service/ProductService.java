@@ -6,7 +6,9 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.scesi.farmacia.app.model.Laboratory;
 import com.scesi.farmacia.app.model.Product;
+import com.scesi.farmacia.app.repository.LaboratoryRepository;
 import com.scesi.farmacia.app.repository.ProductRepository;
 
 @Service
@@ -14,15 +16,24 @@ public class ProductService {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private LaboratoryRepository laboratoryRepository;
+
     public List<Product> listProducts() {
         return productRepository.findAll();
     }
 
-    public Product saveProduct(Product product) {
+    public Product createProduct(Product product, Long laboratoryId) {
 
         if (productRepository.existsByNameProductAndComposition(product.getNameProduct(), product.getComposition())) {
             throw new IllegalArgumentException("Ya existe un producto con el mismo nombre y composición.");
         }
+        Laboratory laboratory = laboratoryRepository.findById(laboratoryId)
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Laboratory with ID " + laboratoryId + " does not exist."));
+
+        product.setLaboratory(laboratory);
+
         return productRepository.save(product);
     }
 

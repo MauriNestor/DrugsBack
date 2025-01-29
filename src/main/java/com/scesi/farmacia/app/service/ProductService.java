@@ -1,11 +1,13 @@
 package com.scesi.farmacia.app.service;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.scesi.farmacia.app.dto.ProductDTO;
+import com.scesi.farmacia.app.dto.ProductRequestDTO;
 import com.scesi.farmacia.app.model.Laboratory;
 import com.scesi.farmacia.app.model.Product;
 import com.scesi.farmacia.app.repository.LaboratoryRepository;
@@ -19,22 +21,33 @@ public class ProductService {
     @Autowired
     private LaboratoryRepository laboratoryRepository;
 
-    public List<Product> listProducts() {
-        return productRepository.findAll();
+    public List<ProductDTO> listProducts() {
+        return productRepository.findAll()
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
-    public Product createProduct(Product product, Long laboratoryId) {
+    private ProductDTO convertToDTO(Product product) {
+        return new ProductDTO(product);
+    }
 
-        if (productRepository.existsByNameProductAndComposition(product.getNameProduct(), product.getComposition())) {
-            throw new IllegalArgumentException("Ya existe un producto con el mismo nombre y composición.");
-        }
-        Laboratory laboratory = laboratoryRepository.findById(laboratoryId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Laboratory with ID " + laboratoryId + " does not exist."));
+    public ProductDTO createProductFromDTO(ProductRequestDTO productRequestDTO) {
+        Laboratory laboratory = laboratoryRepository.findById(productRequestDTO.getLaboratoryId())
+                .orElseThrow(() -> new IllegalArgumentException("Laboratory not found"));
 
+        Product product = new Product();
+        product.setNameProduct(productRequestDTO.getNameProduct());
+        product.setPriceProduct(productRequestDTO.getPriceProduct());
+        product.setLote(productRequestDTO.getLote());
+        product.setAmount(productRequestDTO.getAmount());
+        product.setExpiration(productRequestDTO.getExpiration());
+        product.setComposition(productRequestDTO.getComposition());
+        product.setDescription(productRequestDTO.getDescription());
         product.setLaboratory(laboratory);
 
-        return productRepository.save(product);
+        Product savedProduct = productRepository.save(product);
+        return new ProductDTO(savedProduct);
     }
 
     public Product getProductById(Long id) {
@@ -42,45 +55,30 @@ public class ProductService {
     }
 
     public void deleteProduct(Long id) {
+        if (!productRepository.existsById(id)) {
+            throw new IllegalArgumentException("El producto con ID " + id + " no existe.");
+        }
         productRepository.deleteById(id);
     }
 
-    public Product updateProduct(Long id, Product productoActualizado) {
-        Optional<Product> productoOptional = productRepository.findById(id);
+    public ProductDTO updateProductFromDTO(Long id, ProductRequestDTO productRequestDTO) {
+        Product existingProduct = productRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
 
-        if (productoOptional.isEmpty()) {
-            throw new IllegalArgumentException("El producto con ID " + id + " no existe.");
-        }
+        existingProduct.setNameProduct(productRequestDTO.getNameProduct());
+        existingProduct.setPriceProduct(productRequestDTO.getPriceProduct());
+        existingProduct.setLote(productRequestDTO.getLote());
+        existingProduct.setAmount(productRequestDTO.getAmount());
+        existingProduct.setExpiration(productRequestDTO.getExpiration());
+        existingProduct.setComposition(productRequestDTO.getComposition());
+        existingProduct.setDescription(productRequestDTO.getDescription());
 
-        // Obtener el producto existente
-        Product productoExistente = productoOptional.get();
+        Laboratory laboratory = laboratoryRepository.findById(productRequestDTO.getLaboratoryId())
+                .orElseThrow(() -> new IllegalArgumentException("Laboratory not found"));
+        existingProduct.setLaboratory(laboratory);
 
-        // Actualizar solo los campos proporcionados
-        if (productoActualizado.getNameProduct() != null) {
-            productoExistente.setNameProduct(productoActualizado.getNameProduct());
-        }
-        if (productoActualizado.getPriceProduct() != null) {
-            productoExistente.setPriceProduct(productoActualizado.getPriceProduct());
-        }
-        if (productoActualizado.getIdUser() != null) {
-            productoExistente.setIdUser(productoActualizado.getIdUser());
-        }
-        if (productoActualizado.getLote() != null) {
-            productoExistente.setLote(productoActualizado.getLote());
-        }
-        if (productoActualizado.getAmount() != null) {
-            productoExistente.setAmount(productoActualizado.getAmount());
-        }
-        if (productoActualizado.getExpiration() != null) {
-            productoExistente.setExpiration(productoActualizado.getExpiration());
-        }
-        if (productoActualizado.getComposition() != null) {
-            productoExistente.setComposition(productoActualizado.getComposition());
-        }
-        if (productoActualizado.getDescription() != null) {
-            productoExistente.setDescription(productoActualizado.getDescription());
-        }
-
-        return productRepository.save(productoExistente);
+        Product updatedProduct = productRepository.save(existingProduct);
+        return new ProductDTO(updatedProduct);
     }
+
 }

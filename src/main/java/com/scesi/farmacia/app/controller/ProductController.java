@@ -1,6 +1,7 @@
 package com.scesi.farmacia.app.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.scesi.farmacia.app.dto.ProductDTO;
+import com.scesi.farmacia.app.dto.ProductRequestDTO;
 import com.scesi.farmacia.app.model.Product;
 import com.scesi.farmacia.app.service.ProductService;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,35 +28,47 @@ public class ProductController {
     private ProductService productService;
 
     @GetMapping
-    public List<Product> listProducts() {
-        return productService.listProducts();
+    public ResponseEntity<List<ProductDTO>> listProducts() {
+        List<ProductDTO> products = productService.listProducts();
+        return ResponseEntity.ok(products);
     }
 
     @PostMapping
-    public ResponseEntity<?> saveProducto(@RequestBody Product producto, @RequestParam Long laboratoryId) {
-        Product createdProduct = productService.createProduct(producto, laboratoryId);
-        return ResponseEntity.ok(createdProduct);
+    public ResponseEntity<ProductDTO> saveProducto(@RequestBody ProductRequestDTO productRequestDTO) {
+        ProductDTO productDTO = productService.createProductFromDTO(productRequestDTO);
+        return ResponseEntity.ok(productDTO);
     }
 
     @GetMapping("/{id}")
-    public Product getProductById(@PathVariable Long id) {
-        return productService.getProductById(id);
+    public ResponseEntity<ProductDTO> getProductById(@PathVariable Long id) {
+        Product product = productService.getProductById(id);
+        ProductDTO productDTO = new ProductDTO(product);
+        return ResponseEntity.ok(productDTO);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteProduct(@PathVariable Long id) {
-        productService.deleteProduct(id);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateProduct(@PathVariable Long id, @RequestBody Product updateProductBody) {
+    public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
         try {
-            Product updatedProduct = productService.updateProduct(id, updateProductBody);
-            return ResponseEntity.ok(updatedProduct);
+            productService.deleteProduct(id);
+            return ResponseEntity.ok("Producto eliminado con éxito.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error interno: " + e.getMessage());
         }
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ProductDTO> updateProduct(@PathVariable Long id,
+            @RequestBody ProductRequestDTO productRequestDTO) {
+        try {
+            ProductDTO updatedProductDTO = productService.updateProductFromDTO(id, productRequestDTO);
+            return ResponseEntity.ok(updatedProductDTO);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
 }

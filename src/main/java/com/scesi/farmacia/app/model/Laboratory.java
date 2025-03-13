@@ -11,6 +11,8 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Data
 @Entity
 @Table(name = "laboratorios")
@@ -30,6 +32,7 @@ public class Laboratory {
     @Column(name = "id_usuario")
     private Long userId;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "laboratory", cascade = CascadeType.ALL)
     private List<Product> products;
 }

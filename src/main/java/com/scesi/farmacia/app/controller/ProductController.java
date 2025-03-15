@@ -26,13 +26,13 @@ public class ProductController {
     private ProductService productService;
 
     @GetMapping
-    public ResponseEntity<List<ProductDTO>> listProducts() {
+    public ResponseEntity<List<ProductDTO>> getAllProductos() {
         List<ProductDTO> products = productService.listProducts();
         return ResponseEntity.ok(products);
     }
 
     @PostMapping
-    public ResponseEntity<ProductDTO> saveProducto(@RequestBody ProductRequestDTO productRequestDTO) {
+    public ResponseEntity<ProductDTO> crearProducto(@RequestBody ProductRequestDTO productRequestDTO) {
         ProductDTO productDTO = productService.createProductFromDTO(productRequestDTO);
         return ResponseEntity.ok(productDTO);
     }

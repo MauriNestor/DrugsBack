@@ -34,7 +34,8 @@ public class ProductService {
 
     public ProductDTO createProductFromDTO(ProductRequestDTO productRequestDTO) {
         Laboratory laboratory = laboratoryRepository.findById(productRequestDTO.getLaboratoryId())
-                .orElseThrow(() -> new IllegalArgumentException("Laboratory not found"));
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Laboratory with ID " + productRequestDTO.getLaboratoryId() + " not found."));
 
         Product product = new Product();
         product.setNameProduct(productRequestDTO.getNameProduct());

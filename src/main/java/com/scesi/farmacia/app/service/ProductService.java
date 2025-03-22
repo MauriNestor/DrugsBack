@@ -63,22 +63,54 @@ public class ProductService {
     }
 
     public ProductDTO updateProductFromDTO(Long id, ProductRequestDTO productRequestDTO) {
+        // Verificar si el producto existe
         Product existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Product with ID " + id + " not found."));
 
-        existingProduct.setNameProduct(productRequestDTO.getNameProduct());
-        existingProduct.setPriceProduct(productRequestDTO.getPriceProduct());
-        existingProduct.setLote(productRequestDTO.getLote());
-        existingProduct.setAmount(productRequestDTO.getAmount());
-        existingProduct.setExpiration(productRequestDTO.getExpiration());
-        existingProduct.setComposition(productRequestDTO.getComposition());
-        existingProduct.setDescription(productRequestDTO.getDescription());
-
+        // Validar si el laboratorio existe
         Laboratory laboratory = laboratoryRepository.findById(productRequestDTO.getLaboratoryId())
-                .orElseThrow(() -> new IllegalArgumentException("Laboratory not found"));
-        existingProduct.setLaboratory(laboratory);
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Laboratory with ID " + productRequestDTO.getLaboratoryId() + " not found."));
 
+        // Validar duplicados (nombre y composición)
+        boolean exists = productRepository.existsByNameProductAndComposition(
+                productRequestDTO.getNameProduct(), productRequestDTO.getComposition());
+
+        if (exists && !existingProduct.getNameProduct().equals(productRequestDTO.getNameProduct())) {
+            throw new IllegalArgumentException("A product with the same name and composition already exists.");
+        }
+
+        // Validar que el precio y la cantidad sean positivos
+        if (productRequestDTO.getPriceProduct() != null && productRequestDTO.getPriceProduct() < 0) {
+            throw new IllegalArgumentException("Price must be a positive value.");
+        }
+
+        if (productRequestDTO.getAmount() != null && productRequestDTO.getAmount() < 0) {
+            throw new IllegalArgumentException("Amount must be a positive value.");
+        }
+
+        // Actualizar solo los campos que no son nulos
+        if (productRequestDTO.getNameProduct() != null)
+            existingProduct.setNameProduct(productRequestDTO.getNameProduct());
+        if (productRequestDTO.getPriceProduct() != null)
+            existingProduct.setPriceProduct(productRequestDTO.getPriceProduct());
+        if (productRequestDTO.getLote() != null)
+            existingProduct.setLote(productRequestDTO.getLote());
+        if (productRequestDTO.getAmount() != null)
+            existingProduct.setAmount(productRequestDTO.getAmount());
+        if (productRequestDTO.getExpiration() != null)
+            existingProduct.setExpiration(productRequestDTO.getExpiration());
+        if (productRequestDTO.getComposition() != null)
+            existingProduct.setComposition(productRequestDTO.getComposition());
+        if (productRequestDTO.getDescription() != null)
+            existingProduct.setDescription(productRequestDTO.getDescription());
+
+        existingProduct.setLaboratory(laboratory); // Siempre actualizar el laboratorio
+
+        // Guardar en la base de datos
         Product updatedProduct = productRepository.save(existingProduct);
+
+        // Convertir a DTO antes de devolverlo
         return new ProductDTO(updatedProduct);
     }
 

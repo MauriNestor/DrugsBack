@@ -51,16 +51,12 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ProductDTO> updateProduct(@PathVariable Long id,
+    public ResponseEntity<ProductDTO> updateProduct(
+            @PathVariable Long id,
             @RequestBody ProductRequestDTO productRequestDTO) {
-        try {
-            ProductDTO updatedProductDTO = productService.updateProductFromDTO(id, productRequestDTO);
-            return ResponseEntity.ok(updatedProductDTO);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(null);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(null);
-        }
+
+        ProductDTO updatedProductDTO = productService.updateProductFromDTO(id, productRequestDTO);
+        return ResponseEntity.ok(updatedProductDTO);
     }
 
 }

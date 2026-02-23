@@ -7,7 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.scesi.farmacia.app.dto.ProductDTO;
-import com.scesi.farmacia.app.dto.ProductRequestDTO;
+import com.scesi.farmacia.app.dto.ProductCreateRequestDTO;
+import com.scesi.farmacia.app.dto.ProductUpdateRequestDTO;
+import com.scesi.farmacia.app.exception.ConflictException;
+import com.scesi.farmacia.app.exception.ResourceNotFoundException;
 import com.scesi.farmacia.app.model.Laboratory;
 import com.scesi.farmacia.app.model.Product;
 import com.scesi.farmacia.app.repository.LaboratoryRepository;
@@ -32,9 +35,9 @@ public class ProductService {
         return new ProductDTO(product);
     }
 
-    public ProductDTO createProductFromDTO(ProductRequestDTO productRequestDTO) {
+    public ProductDTO createProductFromDTO(ProductCreateRequestDTO productRequestDTO) {
         Laboratory laboratory = laboratoryRepository.findById(productRequestDTO.getLaboratoryId())
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Laboratory with ID " + productRequestDTO.getLaboratoryId() + " not found."));
 
         Product product = new Product();
@@ -52,32 +55,39 @@ public class ProductService {
     }
 
     public Product getProductById(Long id) {
-        return productRepository.findById(id).orElse(null);
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID " + id + " not found."));
     }
 
     public void deleteProduct(Long id) {
         if (!productRepository.existsById(id)) {
-            throw new IllegalArgumentException("El producto con ID " + id + " no existe.");
+            throw new ResourceNotFoundException("Product with ID " + id + " not found.");
         }
         productRepository.deleteById(id);
     }
 
-    public ProductDTO updateProductFromDTO(Long id, ProductRequestDTO productRequestDTO) {
+    public ProductDTO updateProductFromDTO(Long id, ProductUpdateRequestDTO productRequestDTO) {
         // Verificar si el producto existe
         Product existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Product with ID " + id + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID " + id + " not found."));
 
-        // Validar si el laboratorio existe
-        Laboratory laboratory = laboratoryRepository.findById(productRequestDTO.getLaboratoryId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Laboratory with ID " + productRequestDTO.getLaboratoryId() + " not found."));
+        Laboratory laboratory = existingProduct.getLaboratory();
+        if (productRequestDTO.getLaboratoryId() != null) {
+            laboratory = laboratoryRepository.findById(productRequestDTO.getLaboratoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Laboratory with ID " + productRequestDTO.getLaboratoryId() + " not found."));
+        }
 
-        // Validar duplicados (nombre y composición)
-        boolean exists = productRepository.existsByNameProductAndComposition(
-                productRequestDTO.getNameProduct(), productRequestDTO.getComposition());
+        String effectiveName = productRequestDTO.getNameProduct() != null ? productRequestDTO.getNameProduct()
+                : existingProduct.getNameProduct();
+        String effectiveComposition = productRequestDTO.getComposition() != null ? productRequestDTO.getComposition()
+                : existingProduct.getComposition();
 
-        if (exists && !existingProduct.getNameProduct().equals(productRequestDTO.getNameProduct())) {
-            throw new IllegalArgumentException("A product with the same name and composition already exists.");
+        boolean exists = productRepository.existsByNameProductAndComposition(effectiveName, effectiveComposition);
+        boolean isSameKey = effectiveName.equals(existingProduct.getNameProduct())
+                && effectiveComposition.equals(existingProduct.getComposition());
+        if (exists && !isSameKey) {
+            throw new ConflictException("A product with the same name and composition already exists.");
         }
 
         // Validar que el precio y la cantidad sean positivos
@@ -105,7 +115,7 @@ public class ProductService {
         if (productRequestDTO.getDescription() != null)
             existingProduct.setDescription(productRequestDTO.getDescription());
 
-        existingProduct.setLaboratory(laboratory); // Siempre actualizar el laboratorio
+        existingProduct.setLaboratory(laboratory);
 
         // Guardar en la base de datos
         Product updatedProduct = productRepository.save(existingProduct);
